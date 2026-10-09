@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل الدخول - لوحة البيانات</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --card-border: #334155;
+            --text-color: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-blue: #38bdf8;
+            --danger-red: #f87171;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .auth-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 30px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+        }
+
+        .auth-title {
+            text-align: center;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+
+        .tab-buttons {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-weight: bold;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+        }
+
+        .tab-btn.active {
+            color: var(--accent-blue);
+            border-bottom-color: var(--accent-blue);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            background: #0f172a;
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            color: var(--text-color);
+            outline: none;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 12px;
+            background: var(--accent-blue);
+            color: #0f172a;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .msg-box {
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            margin-bottom: 15px;
+            display: none;
+            text-align: center;
+        }
+
+        .msg-error {
+            background: rgba(248, 113, 113, 0.1);
+            color: var(--danger-red);
+            border: 1px solid var(--danger-red);
+        }
+
+        .msg-success {
+            background: rgba(74, 222, 128, 0.1);
+            color: #4ade80;
+            border: 1px solid #4ade80;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="auth-card">
+        <div class="auth-title">📊 مرحباً بك في اللوحة</div>
+
+        <div class="tab-buttons">
+            <button class="tab-btn active" id="loginTabBtn" onclick="switchTab('login')">تسجيل الدخول</button>
+            <button class="tab-btn" id="registerTabBtn" onclick="switchTab('register')">إنشاء حساب جديد</button>
+        </div>
+
+        <div id="msgBox" class="msg-box"></div>
+
+        <!-- تسجيل الدخول بواسطة الجيميل -->
+        <form id="loginForm" onsubmit="handleLogin(event)">
+            <div class="form-group">
+                <label>حساب الجيميل (Gmail):</label>
+                <input type="email" id="loginGmail" class="form-control" placeholder="example@gmail.com" required>
+            </div>
+            <div class="form-group">
+                <label>كلمة المرور:</label>
+                <input type="password" id="loginPassword" class="form-control" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="btn-submit">دخول</button>
+        </form>
+
+        <!-- إنشاء حساب بالاسم الكامل والجيميل -->
+        <form id="registerForm" style="display: none;" onsubmit="handleRegister(event)">
+            <div class="form-group">
+                <label>الاسم الكامل:</label>
+                <input type="text" id="regFullName" class="form-control" placeholder="علي محمد" required>
+            </div>
+            <div class="form-group">
+                <label>حساب الجيميل (Gmail):</label>
+                <input type="email" id="regGmail" class="form-control" placeholder="example@gmail.com" required>
+            </div>
+            <div class="form-group">
+                <label>كلمة المرور:</label>
+                <input type="password" id="regPassword" class="form-control" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="btn-submit">إنشاء الحساب</button>
+        </form>
+    </div>
+
+    <script>
+        let currentTab = 'login';
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.getElementById('msgBox').style.display = 'none';
+
+            if (tab === 'login') {
+                document.getElementById('loginForm').style.display = 'block';
+                document.getElementById('registerForm').style.display = 'none';
+                document.getElementById('loginTabBtn').classList.add('active');
+                document.getElementById('registerTabBtn').classList.remove('active');
+            } else {
+                document.getElementById('loginForm').style.display = 'none';
+                document.getElementById('registerForm').style.display = 'block';
+                document.getElementById('registerTabBtn').classList.add('active');
+                document.getElementById('loginTabBtn').classList.remove('active');
+            }
+        }
+
+        function showMsg(text, isError = true) {
+            const box = document.getElementById('msgBox');
+            box.textContent = text;
+            box.className = `msg-box ${isError ? 'msg-error' : 'msg-success'}`;
+            box.style.display = 'block';
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const res = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    gmail: document.getElementById('loginGmail').value,
+                    password: document.getElementById('loginPassword').value
+                })
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                window.location.href = '/';
+            } else {
+                showMsg(data.message, true);
+            }
+        }
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            const res = await fetch('/api/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    full_name: document.getElementById('regFullName').value,
+                    gmail: document.getElementById('regGmail').value,
+                    password: document.getElementById('regPassword').value
+                })
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                showMsg(data.message, false);
+                setTimeout(() => switchTab('login'), 1500);
+            } else {
+                showMsg(data.message, true);
+            }
+        }
+    </script>
+</body>
+</html>

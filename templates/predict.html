@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>توقع النتيجة بالذكاء الاصطناعي</title>
+    <style>
+        body { font-family: system-ui, sans-serif; background-color: #f4f6f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; width: 350px; }
+        input[type="number"] { width: 80%; padding: 10px; margin: 15px 0; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; text-align: center; }
+        button { background-color: #4CAF50; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-size: 16px; cursor: pointer; }
+        button:hover { background-color: #45a049; }
+        .result { margin-top: 20px; font-size: 20px; font-weight: bold; color: #333; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>توقع النتيجة 🤖</h2>
+        <form action="/predict_page" method="POST">
+            <label for="hours">أدخل عدد ساعات الدراسة:</label>
+            <input type="number" id="hours" name="hours" step="0.5" min="0" required value="{{ hours if hours }}">
+            <br>
+            <button type="submit">توقع النتيجة</button>
+        </form>
+
+        {% if result %}
+        <div class="result">
+            التوقع: <span>{{ result }}</span>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>

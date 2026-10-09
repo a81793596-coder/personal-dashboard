@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة متابعة البيانات الشخصية</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --card-border: #334155;
+            --text-color: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-blue: #38bdf8;
+            --accent-green: #4ade80;
+            --accent-purple: #c084fc;
+            --accent-pink: #f472b6;
+            --accent-yellow: #fde047;
+            --danger-red: #f87171;
+            --input-bg: #0f172a;
+        }
+
+        body.light-mode {
+            --bg-color: #f1f5f9;
+            --card-bg: #ffffff;
+            --card-border: #cbd5e1;
+            --text-color: #0f172a;
+            --text-muted: #64748b;
+            --input-bg: #f8fafc;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 900px;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .header-actions {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .action-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            width: 100%;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .user-pill {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .single-column-container {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 18px;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .btn-filter, .btn-secondary {
+            background: var(--input-bg);
+            border: 1px solid var(--card-border);
+            color: var(--text-color);
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            flex: 1 1 auto;
+        }
+
+        .btn-filter.active {
+            background: var(--accent-blue);
+            color: #0f172a;
+            font-weight: bold;
+        }
+
+        .alert-box {
+            background: rgba(244, 114, 182, 0.1);
+            border: 1px solid var(--accent-pink);
+            color: var(--accent-pink);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+        }
+
+        .ai-card {
+            background: rgba(56, 189, 248, 0.08);
+            border: 1px solid var(--accent-blue);
+            border-radius: 12px;
+            padding: 18px;
+        }
+
+        .ai-title {
+            color: var(--accent-blue);
+            font-size: 1.05rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .ai-content {
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: var(--text-color);
+        }
+
+        .predict-box {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed var(--card-border);
+            font-weight: bold;
+            color: var(--accent-green);
+        }
+
+        .heatmap-grid {
+            display: grid;
+            grid-template-columns: repeat(15, 1fr);
+            gap: 6px;
+            margin-top: 10px;
+        }
+
+        .heatmap-cell {
+            aspect-ratio: 1;
+            border-radius: 4px;
+            background: var(--input-bg);
+            border: 1px solid var(--card-border);
+            position: relative;
+        }
+
+        .heatmap-cell.level-1 { background: rgba(74, 222, 128, 0.2); }
+        .heatmap-cell.level-2 { background: rgba(74, 222, 128, 0.5); }
+        .heatmap-cell.level-3 { background: rgba(74, 222, 128, 0.8); }
+        .heatmap-cell.level-4 { background: #4ade80; }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .stat-card {
+            background: var(--input-bg);
+            border: 1px solid var(--card-border);
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 250px;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            margin-bottom: 14px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            text-align: right;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            background: var(--input-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            color: var(--text-color);
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        .form-control:focus {
+            border-color: var(--accent-blue);
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 12px;
+            background: var(--accent-blue);
+            color: #0f172a;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 0.95rem;
+            margin-top: 5px;
+        }
+
+        .progress-item {
+            margin-bottom: 14px;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            margin-bottom: 6px;
+        }
+
+        .progress-bar-bg {
+            background: var(--input-bg);
+            height: 10px;
+            border-radius: 5px;
+            overflow: hidden;
+            border: 1px solid var(--card-border);
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: var(--accent-green);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .badges-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        .badge-item {
+            background: var(--input-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            opacity: 0.4;
+        }
+
+        .badge-item.active {
+            opacity: 1;
+            border-color: var(--accent-yellow);
+        }
+
+        .badge-icon {
+            font-size: 1.5rem;
+            margin-bottom: 4px;
+        }
+
+        .badge-title {
+            font-size: 0.75rem;
+        }
+
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            text-align: center;
+            min-width: 600px;
+        }
+
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        th {
+            color: var(--text-muted);
+            background: var(--input-bg);
+        }
+
+        .actions-cell {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-action {
+            padding: 4px 10px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
+        .btn-edit {
+            background: var(--accent-blue);
+            color: #0f172a;
+        }
+
+        .btn-delete {
+            background: var(--danger-red);
+            color: white;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(4px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 25px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+
+        .modal-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .modal-desc {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .modal-btn {
+            padding: 8px 18px;
+            border-radius: 6px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .modal-btn-confirm {
+            background: var(--danger-red);
+            color: white;
+        }
+
+        .modal-btn-cancel {
+            background: var(--card-border);
+            color: var(--text-color);
+        }
+
+        footer {
+            margin-top: 30px;
+            margin-bottom: 20px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            border-top: 1px solid var(--card-border);
+            padding-top: 15px;
+            width: 100%;
+            max-width: 900px;
+        }
+
+        @media (max-width: 640px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .badges-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .heatmap-grid {
+                grid-template-columns: repeat(10, 1fr);
+            }
+            .header h1 {
+                font-size: 1.4rem;
+            }
+            .header-actions {
+                flex-direction: column;
+            }
+            .action-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>📊 لوحة متابعة البيانات الشخصية</h1>
+        <p>تتبع نومك، نشاطك، ساعات المذاكرة، العمل واللعب في مكان واحد</p>
+
+        <div class="header-actions">
+            <div class="action-group">
+                <div class="user-pill">👤 أهلاً، {{ full_name }}</div>
+                <button class="btn-secondary" style="background: var(--danger-red); color: white;" onclick="openLogoutModal()">🚪 تسجيل الخروج</button>
+                <a href="/api/export" class="btn-secondary" style="text-decoration: none;">📥 تصدير CSV</a>
+                <button class="btn-secondary" onclick="document.getElementById('fileInput').click()">📤 استيراد CSV</button>
+                <button class="btn-secondary" onclick="window.print()">🖨️ طباعة</button>
+                <button class="btn-secondary" id="themeToggleBtn" onclick="toggleTheme()">☀️ الوضع الفاتح</button>
+                <input type="file" id="fileInput" accept=".csv" style="display: none;" onchange="handleImport(event)">
+            </div>
+        </div>
+    </div>
+
+    <div class="single-column-container">
+        
+        <!-- 1. تسجيل يوم جديد واليوميات -->
+        <div class="card" id="formCard">
+            <div class="card-title" style="margin-bottom: 15px;">📝 تسجيل يوم جديد واليوميات</div>
+            <form id="dataForm" onsubmit="handleFormSubmit(event)">
+                <div class="form-group">
+                    <label>التاريخ:</label>
+                    <input type="date" id="inputDate" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>ساعات النوم (ساعة):</label>
+                    <input type="number" step="0.5" id="inputSleep" class="form-control" placeholder="مثال: 7.5" required>
+                </div>
+                <div class="form-group">
+                    <label>عدد الخطوات:</label>
+                    <input type="number" id="inputSteps" class="form-control" placeholder="مثال: 6000" required>
+                </div>
+                <div class="form-group">
+                    <label>ساعات المذاكرة (ساعة):</label>
+                    <input type="number" step="0.5" id="inputStudy" class="form-control" placeholder="مثال: 4" required>
+                </div>
+                <div class="form-group">
+                    <label>ساعات العمل (ساعة):</label>
+                    <input type="number" step="0.5" id="inputWork" class="form-control" placeholder="مثال: 6" required>
+                </div>
+                <div class="form-group">
+                    <label>ساعات اللعب/الترفيه (ساعة):</label>
+                    <input type="number" step="0.5" id="inputPlay" class="form-control" placeholder="مثال: 2" required>
+                </div>
+                <div class="form-group">
+                    <label>ملاحظة اليوم / أهم إنجاز (اختياري):</label>
+                    <input type="text" id="inputNotes" class="form-control" placeholder="مثال: أنجزت اختبار الفلاسك وتدربت على التنسيق">
+                </div>
+                <button type="submit" class="btn-submit">💾 حفظ البيانات واليوميات</button>
+            </form>
+        </div>
+
+        <!-- 2. تحليلات وتوقعات الذكاء الاصطناعي -->
+        <div class="ai-card">
+            <div class="ai-title">🤖 تحليلات وتوقعات الذكاء الاصطناعي (AI Insights & Prediction)</div>
+            <div class="ai-content" id="aiInsightsText">جاري تحليل أدائك ونشاطك...</div>
+            <div class="predict-box" id="aiPredictionText">🔮 التوقع اليومي للإنتاجية: جاري الحساب...</div>
+        </div>
+
+        <!-- 3. شبكة تتبع العادات (Heatmap) -->
+        <div class="card">
+            <div class="card-title">🟩 شبكة التزام العادات والنشاط (Habit Heatmap)</div>
+            <div class="heatmap-grid" id="heatmapContainer">
+                <!-- يتم توليد الخلايا الملونة ديناميكياً -->
+            </div>
+        </div>
+
+        <!-- 4. تحليل الأداء والأنشطة -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">📈 تحليل الأداء والأنشطة</div>
+                <div class="btn-group">
+                    <button class="btn-filter" onclick="fetchData('7')">7 أيام</button>
+                    <button class="btn-filter" onclick="fetchData('14')">14 يوم</button>
+                    <button class="btn-filter" onclick="fetchData('30')">30 يوم</button>
+                    <button class="btn-filter active" onclick="fetchData('all')">الكل</button>
+                </div>
+            </div>
+
+            <div id="alertBox" class="alert-box" style="display: none;"></div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">متوسط النوم</div>
+                    <div class="stat-value" id="avgSleep">0 س</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">متوسط الخطوات</div>
+                    <div class="stat-value" id="avgSteps">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">مجموع المذاكرة</div>
+                    <div class="stat-value" id="totalStudy">0 س</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">مجموع العمل</div>
+                    <div class="stat-value" id="totalWork">0 س</div>
+                </div>
+            </div>
+
+            <div class="chart-wrapper">
+                <canvas id="lineChart"></canvas>
+            </div>
+
+            <div class="chart-wrapper">
+                <canvas id="barChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 5. متابعة وتخصيص الأهداف اليومية -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">🎯 متابعة الأهداف اليومية</div>
+                <button class="btn-secondary" onclick="openGoalsModal()">⚙️ تخصيص الأهداف</button>
+            </div>
+
+            <div class="progress-item">
+                <div class="progress-label">
+                    <span>هدف النوم (<span id="targetSleepLabel">8</span> ساعات)</span>
+                    <span id="sleepTargetText">0%</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="sleepTargetBar"></div>
+                </div>
+            </div>
+            <div class="progress-item">
+                <div class="progress-label">
+                    <span>هدف الخطوات (<span id="targetStepsLabel">8,000</span> خطوة)</span>
+                    <span id="stepsTargetText">0%</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="stepsTargetBar"></div>
+                </div>
+            </div>
+            <div class="progress-item">
+                <div class="progress-label">
+                    <span>هدف المذاكرة (<span id="targetStudyLabel">4</span> ساعات)</span>
+                    <span id="studyTargetText">0%</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="studyTargetBar"></div>
+                </div>
+            </div>
+            <div class="progress-item">
+                <div class="progress-label">
+                    <span>هدف العمل (<span id="targetWorkLabel">6</span> ساعات)</span>
+                    <span id="workTargetText">0%</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="workTargetBar"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. أوسمة الإنجاز -->
+        <div class="card">
+            <div class="card-title" style="margin-bottom: 15px;">🏆 أوسمة الإنجاز</div>
+            <div class="badges-grid">
+                <div class="badge-item" id="badgeActivity">
+                    <div class="badge-icon">👟</div>
+                    <div class="badge-title">بطل النشاط</div>
+                </div>
+                <div class="badge-item" id="badgeStudy">
+                    <div class="badge-icon">📚</div>
+                    <div class="badge-title">خبير المذاكرة</div>
+                </div>
+                <div class="badge-item" id="badgeSleep">
+                    <div class="badge-icon">👑</div>
+                    <div class="badge-title">ملك النوم</div>
+                </div>
+                <div class="badge-item" id="badgeBalance">
+                    <div class="badge-icon">⚖️</div>
+                    <div class="badge-title">أسطورة التوازن</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 7. سجل البيانات والملاحظات المخزنة -->
+        <div class="card">
+            <div class="card-title" style="margin-bottom: 15px;">📅 سجل البيانات والملاحظات المخزنة</div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>التاريخ</th>
+                            <th>النوم (س)</th>
+                            <th>الخطوات</th>
+                            <th>المذاكرة (س)</th>
+                            <th>العمل (س)</th>
+                            <th>اللعب (س)</th>
+                            <th>ملاحظة اليوم</th>
+                            <th>إجراء</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dataTableBody">
+                        <!-- يتم إدراج السجلات هنا ديناميكياً -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- نافذة تأكيد تسجيل الخروج -->
+    <div class="modal-overlay" id="logoutModal">
+        <div class="modal-card">
+            <div class="modal-title">🚪 تأكيد تسجيل الخروج</div>
+            <div class="modal-desc">هل أنت تأكد من رغبتك في تسجيل الخروج من حسابك؟</div>
+            <div class="modal-actions">
+                <button class="modal-btn modal-btn-confirm" onclick="confirmLogout()">تسجيل الخروج</button>
+                <button class="modal-btn modal-btn-cancel" onclick="closeLogoutModal()">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة الحذف المخصصة -->
+    <div class="modal-overlay" id="deleteModal">
+        <div class="modal-card">
+            <div class="modal-title">🗑️ تأكيد الحذف</div>
+            <div class="modal-desc">هل أنت تأكد من رغبتك في حذف هذا السجل بشكل نهائي؟</div>
+            <div class="modal-actions">
+                <button class="modal-btn modal-btn-confirm" onclick="confirmDelete()">حذف</button>
+                <button class="modal-btn modal-btn-cancel" onclick="closeDeleteModal()">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة تخصيص الأهداف -->
+    <div class="modal-overlay" id="goalsModal">
+        <div class="modal-card">
+            <div class="modal-title">⚙️ تخصيص الأهداف اليومية</div>
+            <div class="form-group" style="margin-top: 15px;">
+                <label>هدف النوم (ساعات):</label>
+                <input type="number" id="goalSleepInput" class="form-control" value="8">
+            </div>
+            <div class="form-group">
+                <label>هدف الخطوات:</label>
+                <input type="number" id="goalStepsInput" class="form-control" value="8000">
+            </div>
+            <div class="form-group">
+                <label>هدف المذاكرة (ساعات):</label>
+                <input type="number" id="goalStudyInput" class="form-control" value="4">
+            </div>
+            <div class="form-group">
+                <label>هدف العمل (ساعات):</label>
+                <input type="number" id="goalWorkInput" class="form-control" value="6">
+            </div>
+            <div class="modal-actions" style="margin-top: 20px;">
+                <button class="modal-btn modal-btn-confirm" style="background: var(--accent-blue); color: #0f172a;" onclick="saveCustomGoals()">حفظ الأهداف</button>
+                <button class="modal-btn modal-btn-cancel" onclick="closeGoalsModal()">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>© 2026 جميع الحقوق محفوظة - لوحة متابعة البيانات الشخصية</p>
+    </footer>
+
+    <script>
+        let lineChartInstance = null;
+        let barChartInstance = null;
+        let currentPeriod = 'all';
+        let pendingDeleteId = null;
+
+        let userGoals = {
+            sleep: 8,
+            steps: 8000,
+            study: 4,
+            work: 6
+        };
+
+        document.getElementById('inputDate').valueAsDate = new Date();
+
+        function openLogoutModal() {
+            document.getElementById('logoutModal').style.display = 'flex';
+        }
+
+        function closeLogoutModal() {
+            document.getElementById('logoutModal').style.display = 'none';
+        }
+
+        function confirmLogout() {
+            window.location.href = '/logout';
+        }
+
+        function loadStoredGoals() {
+            const stored = localStorage.getItem('userGoals');
+            if (stored) {
+                userGoals = JSON.parse(stored);
+            }
+            document.getElementById('targetSleepLabel').textContent = userGoals.sleep;
+            document.getElementById('targetStepsLabel').textContent = userGoals.steps.toLocaleString();
+            document.getElementById('targetStudyLabel').textContent = userGoals.study;
+            document.getElementById('targetWorkLabel').textContent = userGoals.work;
+        }
+
+        function initCharts() {
+            const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim();
+            const gridColor = getComputedStyle(document.documentElement).getPropertyValue('--card-border').trim();
+
+            const ctxLine = document.getElementById('lineChart').getContext('2d');
+            lineChartInstance = new Chart(ctxLine, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        { label: 'النوم (ساعات)', data: [], borderColor: '#38bdf8', backgroundColor: '#38bdf8', borderWidth: 3, pointRadius: 5, pointHoverRadius: 7, tension: 0.3, fill: false },
+                        { label: 'المذاكرة (ساعات)', data: [], borderColor: '#4ade80', backgroundColor: '#4ade80', borderWidth: 3, pointRadius: 5, pointHoverRadius: 7, tension: 0.3, fill: false },
+                        { label: 'العمل (ساعات)', data: [], borderColor: '#c084fc', backgroundColor: '#c084fc', borderWidth: 3, pointRadius: 5, pointHoverRadius: 7, tension: 0.3, fill: false },
+                        { label: 'اللعب (ساعات)', data: [], borderColor: '#f472b6', backgroundColor: '#f472b6', borderWidth: 3, pointRadius: 5, pointHoverRadius: 7, tension: 0.3, fill: false }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: textColor } } },
+                    scales: {
+                        x: { ticks: { color: textColor }, grid: { color: gridColor } },
+                        y: { ticks: { color: textColor }, grid: { color: gridColor } }
+                    }
+                }
+            });
+
+            const ctxBar = document.getElementById('barChart').getContext('2d');
+            barChartInstance = new Chart(ctxBar, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'عدد الخطوات',
+                        data: [],
+                        backgroundColor: '#fde047',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: textColor } } },
+                    scales: {
+                        x: { ticks: { color: textColor }, grid: { color: gridColor } },
+                        y: { ticks: { color: textColor }, grid: { color: gridColor } }
+                    }
+                }
+            });
+        }
+
+        async function fetchData(period = 'all') {
+            currentPeriod = period;
+            
+            document.querySelectorAll('.btn-filter').forEach(btn => btn.classList.remove('active'));
+            const activeBtn = Array.from(document.querySelectorAll('.btn-filter')).find(b => b.getAttribute('onclick').includes(`'${period}'`));
+            if (activeBtn) activeBtn.classList.add('active');
+
+            const res = await fetch(`/api/data?period=${period}`);
+            const data = await res.json();
+
+            updateDashboard(data);
+            generateAIInsightsAndPrediction(data);
+            renderHeatmap(data);
+        }
+
+        function updateDashboard(data) {
+            const labels = data.map(d => d.date);
+            const sleepData = data.map(d => d.sleep_hours);
+            const studyData = data.map(d => d.study_hours);
+            const workData = data.map(d => d.work_hours);
+            const playData = data.map(d => d.play_hours);
+            const stepsData = data.map(d => d.steps);
+
+            lineChartInstance.data.labels = labels;
+            lineChartInstance.data.datasets[0].data = sleepData;
+            lineChartInstance.data.datasets[1].data = studyData;
+            lineChartInstance.data.datasets[2].data = workData;
+            lineChartInstance.data.datasets[3].data = playData;
+            lineChartInstance.update();
+
+            barChartInstance.data.labels = labels;
+            barChartInstance.data.datasets[0].data = stepsData;
+            barChartInstance.update();
+
+            const count = data.length || 1;
+            const avgSleep = (sleepData.reduce((a, b) => a + b, 0) / count).toFixed(1);
+            const avgSteps = Math.round(stepsData.reduce((a, b) => a + b, 0) / count);
+            const totalStudy = studyData.reduce((a, b) => a + b, 0);
+            const totalWork = workData.reduce((a, b) => a + b, 0);
+            const totalPlay = playData.reduce((a, b) => a + b, 0);
+
+            document.getElementById('avgSleep').textContent = `${avgSleep} س`;
+            document.getElementById('avgSteps').textContent = avgSteps.toLocaleString();
+            document.getElementById('totalStudy').textContent = `${totalStudy} س`;
+            document.getElementById('totalWork').textContent = `${totalWork} س`;
+
+            const alertBox = document.getElementById('alertBox');
+            if (totalPlay > (totalStudy + totalWork)) {
+                alertBox.style.display = 'block';
+                alertBox.textContent = `🎮 تنبيه: ساعات اللعب (${totalPlay} س) أعلى من الإنتاجية (${totalStudy + totalWork} س). حاول توازن وقتك.`;
+            } else {
+                alertBox.style.display = 'none';
+            }
+
+            if (data.length > 0) {
+                const latest = data[data.length - 1];
+                setProgressBar('sleepTarget', (latest.sleep_hours / userGoals.sleep) * 100);
+                setProgressBar('stepsTarget', (latest.steps / userGoals.steps) * 100);
+                setProgressBar('studyTarget', (latest.study_hours / userGoals.study) * 100);
+                setProgressBar('workTarget', (latest.work_hours / userGoals.work) * 100);
+
+                document.getElementById('badgeActivity').classList.toggle('active', latest.steps >= userGoals.steps);
+                document.getElementById('badgeStudy').classList.toggle('active', latest.study_hours >= userGoals.study);
+                document.getElementById('badgeSleep').classList.toggle('active', latest.sleep_hours >= userGoals.sleep);
+                document.getElementById('badgeBalance').classList.toggle('active', latest.study_hours >= 3 && latest.work_hours >= 3 && latest.sleep_hours >= 7);
+            }
+
+            const tbody = document.getElementById('dataTableBody');
+            tbody.innerHTML = '';
+            [...data].reverse().forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${row.date}</td>
+                    <td>${row.sleep_hours}</td>
+                    <td>${row.steps.toLocaleString()}</td>
+                    <td>${row.study_hours}</td>
+                    <td>${row.work_hours}</td>
+                    <td>${row.play_hours}</td>
+                    <td style="color: var(--text-muted); font-size: 0.8rem;">${row.notes || '-'}</td>
+                    <td>
+                        <div class="actions-cell">
+                            <button class="btn-action btn-edit" onclick="editRecord('${row.date}', ${row.sleep_hours}, ${row.steps}, ${row.study_hours}, ${row.work_hours}, ${row.play_hours}, '${escapeHtml(row.notes || '')}')">تعديل</button>
+                            <button class="btn-action btn-delete" onclick="openDeleteModal(${row.id})">حذف</button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        }
+
+        function generateAIInsightsAndPrediction(data) {
+            const insightsElem = document.getElementById('aiInsightsText');
+            const predElem = document.getElementById('aiPredictionText');
+
+            if (!data || data.length === 0) {
+                insightsElem.textContent = "لا توجد بيانات كافية حالياً لتوليد النصائح والتوقعات.";
+                predElem.textContent = "🔮 التوقع اليومي للإنتاجية: بانتظار إدخال بيانات جديدة.";
+                return;
+            }
+
+            const latest = data[data.length - 1];
+            let tips = [];
+
+            if (latest.sleep_hours < 7) {
+                tips.push("😴 معدل نومك في أحدث سجل كان أقل من 7 ساعات. أخذ قسط كافٍ يسهم في رفع التركيز غداً.");
+            } else {
+                tips.push("🌟 ممتاز! حصلت على ساعات نوم كافية لزيادة نشاطك.");
+            }
+
+            if (latest.steps < userGoals.steps) {
+                tips.push(`👟 ننصح بزيادة خطواتك لتجاوز هدف (${userGoals.steps.toLocaleString()}).`);
+            } else {
+                tips.push("🔥 إنجاز رائع في النشاط والخطوات!");
+            }
+
+            insightsElem.innerHTML = tips.map(t => `<p style="margin-bottom:4px;">• ${t}</p>`).join('');
+
+            const sleepScore = Math.min((latest.sleep_hours / userGoals.sleep), 1) * 35;
+            const stepsScore = Math.min((latest.steps / userGoals.steps), 1) * 25;
+            const prodHours = latest.study_hours + latest.work_hours;
+            const prodScore = Math.min((prodHours / (userGoals.study + userGoals.work)), 1) * 40;
+
+            const predictedRate = Math.round(sleepScore + stepsScore + prodScore);
+            predElem.textContent = `🔮 التوقع الذكي لإنتاجية يومك القادم: ${predictedRate}% (بناءً على توازن نومك ونشاطك الحالي)`;
+        }
+
+        function renderHeatmap(data) {
+            const container = document.getElementById('heatmapContainer');
+            container.innerHTML = '';
+
+            const dateMap = {};
+            data.forEach(d => {
+                const score = d.study_hours + d.work_hours + (d.steps / 2000);
+                dateMap[d.date] = score;
+            });
+
+            for (let i = 29; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                const dateStr = d.toISOString().split('T')[0];
+                const score = dateMap[dateStr] || 0;
+
+                const cell = document.createElement('div');
+                cell.className = 'heatmap-cell';
+                cell.title = `${dateStr}: ${score > 0 ? score.toFixed(1) + ' نقاط نشاط' : 'لا توجد بيانات'}`;
+
+                if (score > 10) cell.classList.add('level-4');
+                else if (score > 6) cell.classList.add('level-3');
+                else if (score > 3) cell.classList.add('level-2');
+                else if (score > 0) cell.classList.add('level-1');
+
+                container.appendChild(cell);
+            }
+        }
+
+        function setProgressBar(id, percent) {
+            const cappedPercent = Math.min(Math.round(percent), 100);
+            document.getElementById(`${id}Text`).textContent = `${cappedPercent}%`;
+            document.getElementById(`${id}Bar`).style.width = `${cappedPercent}%`;
+        }
+
+        function editRecord(date, sleep, steps, study, work, play, notes) {
+            document.getElementById('inputDate').value = date;
+            document.getElementById('inputSleep').value = sleep;
+            document.getElementById('inputSteps').value = steps;
+            document.getElementById('inputStudy').value = study;
+            document.getElementById('inputWork').value = work;
+            document.getElementById('inputPlay').value = play;
+            document.getElementById('inputNotes').value = notes || '';
+
+            document.getElementById('formCard').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            const payload = {
+                date: document.getElementById('inputDate').value,
+                sleep_hours: document.getElementById('inputSleep').value,
+                steps: document.getElementById('inputSteps').value,
+                study_hours: document.getElementById('inputStudy').value,
+                work_hours: document.getElementById('inputWork').value,
+                play_hours: document.getElementById('inputPlay').value,
+                notes: document.getElementById('inputNotes').value
+            };
+
+            const res = await fetch('/api/add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                document.getElementById('inputNotes').value = '';
+                fetchData(currentPeriod);
+            }
+        }
+
+        async function handleImport(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const res = await fetch('/api/import', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await res.json();
+            alert(result.message);
+            if (res.ok) {
+                fetchData(currentPeriod);
+            }
+        }
+
+        function toggleTheme() {
+            document.body.classList.toggle('light-mode');
+            const isLight = document.body.classList.contains('light-mode');
+            localStorage.setItem('theme', isLight ? 'light' : 'dark');
+            document.getElementById('themeToggleBtn').textContent = isLight ? '🌙 الوضع الداكن' : '☀️ الوضع الفاتح';
+
+            if (lineChartInstance && barChartInstance) {
+                const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim();
+                const gridColor = getComputedStyle(document.documentElement).getPropertyValue('--card-border').trim();
+
+                lineChartInstance.options.plugins.legend.labels.color = textColor;
+                lineChartInstance.options.scales.x.ticks.color = textColor;
+                lineChartInstance.options.scales.x.grid.color = gridColor;
+                lineChartInstance.options.scales.y.ticks.color = textColor;
+                lineChartInstance.options.scales.y.grid.color = gridColor;
+                lineChartInstance.update();
+
+                barChartInstance.options.plugins.legend.labels.color = textColor;
+                barChartInstance.options.scales.x.ticks.color = textColor;
+                barChartInstance.options.scales.x.grid.color = gridColor;
+                barChartInstance.options.scales.y.ticks.color = textColor;
+                barChartInstance.options.scales.y.grid.color = gridColor;
+                barChartInstance.update();
+            }
+        }
+
+        function loadStoredTheme() {
+            const theme = localStorage.getItem('theme');
+            if (theme === 'light') {
+                document.body.classList.add('light-mode');
+                document.getElementById('themeToggleBtn').textContent = '🌙 الوضع الداكن';
+            }
+        }
+
+        function openGoalsModal() {
+            document.getElementById('goalSleepInput').value = userGoals.sleep;
+            document.getElementById('goalStepsInput').value = userGoals.steps;
+            document.getElementById('goalStudyInput').value = userGoals.study;
+            document.getElementById('goalWorkInput').value = userGoals.work;
+            document.getElementById('goalsModal').style.display = 'flex';
+        }
+
+        function closeGoalsModal() {
+            document.getElementById('goalsModal').style.display = 'none';
+        }
+
+        function saveCustomGoals() {
+            userGoals.sleep = floatVal('goalSleepInput', 8);
+            userGoals.steps = intVal('goalStepsInput', 8000);
+            userGoals.study = floatVal('goalStudyInput', 4);
+            userGoals.work = floatVal('goalWorkInput', 6);
+
+            localStorage.setItem('userGoals', JSON.stringify(userGoals));
+            loadStoredGoals();
+            closeGoalsModal();
+            fetchData(currentPeriod);
+        }
+
+        function floatVal(id, fallback) {
+            const v = parseFloat(document.getElementById(id).value);
+            return isNaN(v) ? fallback : v;
+        }
+
+        function intVal(id, fallback) {
+            const v = parseInt(document.getElementById(id).value);
+            return isNaN(v) ? fallback : v;
+        }
+
+        function openDeleteModal(id) {
+            pendingDeleteId = id;
+            document.getElementById('deleteModal').style.display = 'flex';
+        }
+
+        function closeDeleteModal() {
+            pendingDeleteId = null;
+            document.getElementById('deleteModal').style.display = 'none';
+        }
+
+        async function confirmDelete() {
+            if (pendingDeleteId) {
+                const res = await fetch(`/api/delete/${pendingDeleteId}`, { method: 'DELETE' });
+                if (res.ok) {
+                    closeDeleteModal();
+                    fetchData(currentPeriod);
+                }
+            }
+        }
+
+        window.onload = () => {
+            loadStoredTheme();
+            loadStoredGoals();
+            initCharts();
+            fetchData();
+        };
+    </script>
+</body>
+</html>

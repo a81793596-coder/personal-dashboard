@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لعبة الديناصور المطور 🦖🔫</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: #0f172a;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            padding: 15px;
+            overflow-x: hidden;
+            direction: rtl;
+        }
+        h1 { color: #4cd137; font-size: 1.8rem; margin-bottom: 5px; }
+        p { color: #94a3b8; font-size: 0.9rem; margin-bottom: 10px; }
+        
+        .top-nav {
+            margin-bottom: 10px;
+        }
+
+        .home-btn {
+            display: inline-block;
+            background-color: #38bdf8;
+            color: #0f172a;
+            padding: 8px 18px;
+            border-radius: 20px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(56, 189, 248, 0.2);
+        }
+
+        .home-btn:hover {
+            background-color: #0284c7;
+            color: #ffffff;
+            transform: translateY(-2px);
+        }
+
+        .game-wrapper {
+            max-width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 5px;
+        }
+
+        #gameCanvas {
+            background: #1e293b;
+            border: 3px solid #38bdf8;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            max-width: 100%;
+            height: auto;
+            direction: ltr;
+        }
+
+        .controls-info {
+            background: #1e293b;
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            border: 1px solid #334155;
+            margin-bottom: 12px;
+        }
+        .controls-info span { color: #fbc531; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="top-nav">
+        <a href="/" class="home-btn">🏠 العودة للصفحة الرئيسية</a>
+    </div>
+
+    <h1>🦖 الديناصور المطور</h1>
+    <p>انحني إجبارياً لتفادي الطيور، واجمع النقاط كسباً للرصاص للوصول للمجهول...</p>
+
+    <div class="controls-info">
+        التحكم: <span>[Space / ⬆]</span> قفز | <span>[⬇]</span> انحناء إجباري | <span>[F]</span> إطلاق نار 🔫 | <span>[R]</span> إعادة اللعب
+    </div>
+
+    <div class="game-wrapper">
+        <canvas id="gameCanvas" width="800" height="280"></canvas>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let gameActive = true;
+        let gameWon = false;
+        let gameOver = false;
+        let score = 0;
+        let lastAmmoScoreCheck = 0;
+        const WIN_SCORE = 10000;
+
+        let ammo = 10;
+        let skyCycle = 0;
+        let cycleTimer = 0;
+        let animationFrameId = null;
+
+        const dino = {
+            x: 60,
+            y: 170,
+            width: 42,
+            height: 50,
+            velocityY: 0,
+            gravity: 0.8,
+            isJumping: false,
+            isDucking: false,
+            bullets: []
+        };
+
+        let enemies = [];
+        let frameCount = 0;
+        const keys = {};
+
+        function resetGame() {
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+            gameActive = true;
+            gameWon = false;
+            gameOver = false;
+            score = 0;
+            lastAmmoScoreCheck = 0;
+            ammo = 10;
+            frameCount = 0;
+            enemies = [];
+            dino.bullets = [];
+            dino.y = 170;
+            dino.velocityY = 0;
+            dino.isJumping = false;
+            dino.isDucking = false;
+
+            gameLoop();
+        }
+
+        window.addEventListener('keydown', e => {
+            keys[e.code] = true;
+
+            if ((e.code === 'Space' || e.code === 'ArrowUp') && !dino.isJumping && !dino.isDucking && gameActive) {
+                dino.velocityY = -13.5;
+                dino.isJumping = true;
+            }
+
+            if ((e.code === 'KeyF' || e.code === 'ShiftLeft') && gameActive) {
+                shootBullet();
+            }
+
+            if (e.code === 'KeyR') {
+                resetGame();
+            }
+        });
+
+        canvas.addEventListener('click', () => {
+            if (gameOver || gameWon) resetGame();
+        });
+
+        window.addEventListener('keyup', e => { keys[e.code] = false; });
+
+        function shootBullet() {
+            if (ammo > 0) {
+                ammo--;
+                dino.bullets.push({
+                    x: dino.x + dino.width,
+                    y: dino.isDucking ? dino.y + 14 : dino.y + 16,
+                    width: 14,
+                    height: 5,
+                    speed: 12
+                });
+            }
+        }
+
+        function spawnEnemy() {
+            if (frameCount % 80 === 0 && score < WIN_SCORE) {
+                const types = ['bird', 'monster', 'cactus'];
+                const type = types[Math.floor(Math.random() * types.length)];
+
+                if (type === 'bird') {
+                    enemies.push({ type: 'bird', x: canvas.width, y: 162, width: 38, height: 26, speed: 6, hp: 1 });
+                } else if (type === 'monster') {
+                    enemies.push({ type: 'monster', x: canvas.width, y: 172, width: 38, height: 48, speed: 5, hp: 1 });
+                } else {
+                    enemies.push({ type: 'cactus', x: canvas.width, y: 175, width: 28, height: 45, speed: 5, hp: 999 });
+                }
+            }
+        }
+
+        function update() {
+            if (!gameActive) return;
+            frameCount++;
+
+            if (frameCount % 6 === 0) {
+                score += 1;
+
+                if (score - lastAmmoScoreCheck >= 100) {
+                    ammo++;
+                    lastAmmoScoreCheck = score;
+                }
+
+                if (score >= WIN_SCORE) {
+                    score = WIN_SCORE;
+                    gameWon = true;
+                    gameActive = false;
+                }
+            }
+
+            cycleTimer++;
+            if (cycleTimer > 320) {
+                skyCycle = skyCycle === 0 ? 1 : 0;
+                cycleTimer = 0;
+            }
+
+            if (keys['ArrowDown'] && !dino.isJumping) {
+                dino.isDucking = true;
+                dino.height = 24;
+                dino.y = 196;
+            } else {
+                if (dino.isDucking) dino.y = 170;
+                dino.isDucking = false;
+                dino.height = 50;
+            }
+
+            dino.y += dino.velocityY;
+            dino.velocityY += dino.gravity;
+
+            const groundY = dino.isDucking ? 196 : 170;
+            if (dino.y >= groundY) {
+                dino.y = groundY;
+                dino.velocityY = 0;
+                dino.isJumping = false;
+            }
+
+            for (let i = dino.bullets.length - 1; i >= 0; i--) {
+                let b = dino.bullets[i];
+                b.x += b.speed;
+                if (b.x > canvas.width) dino.bullets.splice(i, 1);
+            }
+
+            spawnEnemy();
+
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                let enemy = enemies[i];
+                enemy.x -= enemy.speed;
+
+                for (let j = dino.bullets.length - 1; j >= 0; j--) {
+                    let b = dino.bullets[j];
+                    if (b.x < enemy.x + enemy.width &&
+                        b.x + b.width > enemy.x &&
+                        b.y < enemy.y + enemy.height &&
+                        b.y + b.height > enemy.y) {
+                        
+                        if (enemy.type !== 'cactus') {
+                            enemy.hp--;
+                            dino.bullets.splice(j, 1);
+
+                            if (enemy.hp <= 0) {
+                                enemies.splice(i, 1);
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (dino.x < enemy.x + enemy.width &&
+                    dino.x + dino.width > enemy.x &&
+                    dino.y < enemy.y + enemy.height &&
+                    dino.y + dino.height > enemy.y) {
+                    gameOver = true;
+                    gameActive = false;
+                }
+
+                if (enemy && enemy.x + enemy.width < 0) {
+                    enemies.splice(i, 1);
+                }
+            }
+        }
+
+        function drawDino(x, y, isDuck) {
+            ctx.fillStyle = '#22c55e';
+            if (isDuck) {
+                ctx.fillRect(x, y + 6, 42, 18);
+                ctx.fillRect(x + 30, y - 2, 14, 12);
+                ctx.fillStyle = '#15803d';
+                ctx.fillRect(x - 6, y + 8, 8, 8);
+            } else {
+                ctx.fillRect(x + 6, y + 15, 28, 25);
+                ctx.fillRect(x + 18, y, 22, 18);
+                ctx.fillStyle = '#15803d';
+                ctx.fillRect(x - 8, y + 20, 10, 10);
+                ctx.fillRect(x + 10, y + 40, 8, 10);
+                ctx.fillRect(x + 22, y + 40, 8, 10);
+            }
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(x + (isDuck ? 36 : 30), y + (isDuck ? 1 : 3), 5, 5);
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(x + (isDuck ? 38 : 32), y + (isDuck ? 2 : 4), 2, 2);
+
+            ctx.fillStyle = '#f59e0b';
+            ctx.fillRect(x + (isDuck ? 38 : 30), y + (isDuck ? 12 : 22), 12, 5);
+        }
+
+        function drawEnemy(e) {
+            if (e.type === 'bird') {
+                ctx.fillStyle = '#38bdf8';
+                ctx.fillRect(e.x + 8, e.y + 6, 22, 12);
+                ctx.fillRect(e.x + 22, e.y, 10, 10);
+                ctx.fillStyle = '#f97316';
+                ctx.fillRect(e.x + 32, e.y + 4, 6, 4);
+                ctx.fillStyle = '#0284c7';
+                let wingOffset = (frameCount % 16 < 8) ? -6 : 8;
+                ctx.fillRect(e.x + 12, e.y + wingOffset, 10, 8);
+            } else if (e.type === 'monster') {
+                ctx.fillStyle = '#a855f7';
+                ctx.fillRect(e.x + 4, e.y + 10, 30, 38);
+                ctx.fillRect(e.x + 2, e.y + 2, 8, 10);
+                ctx.fillRect(e.x + 28, e.y + 2, 8, 10);
+                ctx.fillStyle = '#ef4444';
+                ctx.fillRect(e.x + 10, e.y + 16, 6, 6);
+                ctx.fillRect(e.x + 22, e.y + 16, 6, 6);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(e.x + 12, e.y + 34, 4, 6);
+                ctx.fillRect(e.x + 22, e.y + 34, 4, 6);
+            } else {
+                ctx.fillStyle = '#16a34a';
+                ctx.fillRect(e.x + 10, e.y, 10, 45);
+                ctx.fillRect(e.x, e.y + 12, 10, 6);
+                ctx.fillRect(e.x, e.y + 6, 5, 12);
+                ctx.fillRect(e.x + 18, e.y + 20, 10, 6);
+                ctx.fillRect(e.x + 23, e.y + 12, 5, 12);
+            }
+        }
+
+        function draw() {
+            let grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            if (skyCycle === 0) {
+                grad.addColorStop(0, '#38bdf8');
+                grad.addColorStop(1, '#bae6fd');
+            } else {
+                grad.addColorStop(0, '#0f172a');
+                grad.addColorStop(1, '#1e1b4b');
+            }
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = skyCycle === 0 ? '#facc15' : '#fef08a';
+            ctx.beginPath();
+            ctx.arc(710, 45, 18, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = skyCycle === 0 ? '#22c55e' : '#15803d';
+            ctx.fillRect(0, 220, canvas.width, 60);
+            ctx.fillStyle = '#78350f';
+            ctx.fillRect(0, 232, canvas.width, 48);
+
+            drawDino(dino.x, dino.y, dino.isDucking);
+
+            ctx.fillStyle = '#ef4444';
+            dino.bullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
+
+            enemies.forEach(e => drawEnemy(e));
+
+            ctx.fillStyle = skyCycle === 0 ? '#0f172a' : '#ffffff';
+            ctx.font = 'bold 16px sans-serif';
+            ctx.fillText(`Score: ${score}`, 20, 30);
+            
+            ctx.fillStyle = ammo > 0 ? '#fbc531' : '#f87171';
+            ctx.fillText(`Bullets: ${ammo}`, 20, 55);
+
+            if (gameWon) {
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = 'bold 22px sans-serif';
+                ctx.fillText('وصل الديناصور للنهاية... لكنه أدرك أنه وحيد تماماً.', 130, 90);
+
+                ctx.font = '16px sans-serif';
+                ctx.fillStyle = '#cbd5e1';
+                ctx.fillText('لا توجد عائلة، ولا ديناصورات أخرى تنتظره.', 250, 130);
+                ctx.fillText('لقد نجوت من المعركة... ولكن بضياع كل شيء.', 230, 160);
+
+                ctx.fillStyle = '#38bdf8';
+                ctx.fillRect(290, 195, 220, 40);
+                ctx.fillStyle = '#0f172a';
+                ctx.font = 'bold 15px sans-serif';
+                ctx.fillText('اضغط R لإعادة المحاولة', 320, 220);
+            }
+
+            if (gameOver) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                ctx.fillStyle = '#f87171';
+                ctx.font = 'bold 28px sans-serif';
+                ctx.fillText('Game Over!', 330, 110);
+
+                ctx.fillStyle = '#ef4444';
+                ctx.fillRect(290, 145, 220, 45);
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 16px sans-serif';
+                ctx.fillText('اضغط R لإعادة اللعب', 320, 173);
+            }
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            if (gameActive) {
+                animationFrameId = requestAnimationFrame(gameLoop);
+            }
+        }
+
+        gameLoop();
+    </script>
+</body>
+</html>
